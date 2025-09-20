@@ -6,17 +6,23 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx tsc && node dist/app.js"
+    "build": "npx tsc",
+    "dev": "node dist/app.js",
+    "seed": "node dist/prisma/seed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.16.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.2"
   }
 }
