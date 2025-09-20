@@ -79,14 +79,14 @@ export const listBots = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'OpenMic API key not configured' });
   }
 
-  let limit = req.query.limit;
+  const pageNo = Number(req.query.page) || 1;
+  const limit = 10;
 
-  if ( !limit || isNaN(Number(limit)) || Number(limit) <= 0 ) {
-    limit = '50';
-  }
+  const offset = (pageNo - 1) * limit;
 
   const url = new URL('https://api.openmic.ai/v1/bots');
-  if (limit) url.searchParams.append('limit', String(limit));
+  url.searchParams.append('limit', String(limit));
+  url.searchParams.append('offset', String(offset));
 
   const options = {
     method: 'GET',
