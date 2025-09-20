@@ -1,103 +1,274 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+
+interface Bot {
+  uid: string;
+  name: string;
+  prompt: string;
+  first_message: string;
+  post_call_settings?: {
+    summary_prompt: string;
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [bots, setBots] = useState<Bot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingBot, setEditingBot] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    prompt: "",
+    first_message: "",
+    summary_prompt: ""
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+  const fetchBots = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/bot/list`);
+      const data = await response.json();
+      setBots(data.bots || []);
+    } catch (error) {
+      console.error("Failed to fetch bots:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createBot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/api/bot/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        setFormData({ name: "", prompt: "", first_message: "", summary_prompt: "" });
+        setShowCreateForm(false);
+        fetchBots();
+      }
+    } catch (error) {
+      console.error("Failed to create bot:", error);
+    }
+  };
+
+  const updateBot = async (e: React.FormEvent, uid: string) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/api/bot/update/${uid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        setBots(bots.map(bot => 
+          bot.uid === uid 
+            ? { 
+                ...bot, 
+                name: formData.name, 
+                prompt: formData.prompt, 
+                first_message: formData.first_message,
+                post_call_settings: { summary_prompt: formData.summary_prompt }
+              }
+            : bot
+        ));
+        setEditingBot(null);
+        setFormData({ name: "", prompt: "", first_message: "", summary_prompt: "" });
+      }
+    } catch (error) {
+      console.error("Failed to update bot:", error);
+    }
+  };
+
+  const deleteBot = async (uid: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/bot/delete/${uid}`, {
+        method: "DELETE"
+      });
+      if (response.ok) {
+        setBots(bots.filter(bot => bot.uid !== uid));
+      }
+    } catch (error) {
+      console.error("Failed to delete bot:", error);
+    }
+  };
+
+  const startEditing = (bot: Bot) => {
+    setEditingBot(bot.uid);
+    setFormData({
+      name: bot.name,
+      prompt: bot.prompt,
+      first_message: bot.first_message,
+      summary_prompt: bot.post_call_settings?.summary_prompt || ""
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingBot(null);
+    setFormData({ name: "", prompt: "", first_message: "", summary_prompt: "" });
+  };
+
+  useEffect(() => {
+    fetchBots();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-black mb-2">Attack Capital</h1>
+          <p className="text-black">Bot Management Dashboard</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="mb-6">
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold"
+          >
+            {showCreateForm ? "Cancel" : "Create New Bot"}
+          </button>
+        </div>
+
+        {showCreateForm && (
+          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 className="text-xl font-semibold mb-4 text-black">Create New Bot</h2>
+            <form onSubmit={createBot} className="space-y-4">
+              <input
+                type="text"
+                placeholder="Bot Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full p-3 border rounded-lg text-black placeholder-black"
+                required
+              />
+              <textarea
+                placeholder="Bot Prompt"
+                value={formData.prompt}
+                onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                className="w-full p-3 border rounded-lg h-24 text-black placeholder-black"
+                required
+              />
+              <input
+                type="text"
+                placeholder="First Message"
+                value={formData.first_message}
+                onChange={(e) => setFormData({ ...formData, first_message: e.target.value })}
+                className="w-full p-3 border rounded-lg text-black placeholder-black"
+                required
+              />
+              <textarea
+                placeholder="Summary Prompt"
+                value={formData.summary_prompt}
+                onChange={(e) => setFormData({ ...formData, summary_prompt: e.target.value })}
+                className="w-full p-3 border rounded-lg h-24 text-black placeholder-black"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
+              >
+                Create Bot
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-md">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-black">Your Bots</h2>
+          </div>
+          
+          {loading ? (
+            <div className="p-6 text-center text-black">Loading...</div>
+          ) : bots.length === 0 ? (
+            <div className="p-6 text-center text-black">No bots found</div>
+          ) : (
+            <div className="divide-y">
+              {bots.map((bot) => (
+                <div key={bot.uid} className="p-6">
+                  {editingBot === bot.uid ? (
+                    <form onSubmit={(e) => updateBot(e, bot.uid)} className="space-y-4">
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full p-3 border rounded-lg text-black"
+                        required
+                      />
+                      <textarea
+                        value={formData.prompt}
+                        onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                        className="w-full p-3 border rounded-lg h-24 text-black"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={formData.first_message}
+                        onChange={(e) => setFormData({ ...formData, first_message: e.target.value })}
+                        className="w-full p-3 border rounded-lg text-black"
+                        required
+                      />
+                      <textarea
+                        placeholder="Summary Prompt"
+                        value={formData.summary_prompt}
+                        onChange={(e) => setFormData({ ...formData, summary_prompt: e.target.value })}
+                        className="w-full p-3 border rounded-lg h-24 text-black placeholder-black"
+                        required
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          type="submit"
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditing}
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-black">{bot.name}</h3>
+                        <p className="text-black mt-1 mb-2">{bot.first_message}</p>
+                        <div className="text-sm text-black space-y-1">
+                          <p><span className="font-medium">Prompt:</span> {bot.prompt.substring(0, 100)}...</p>
+                          <p><span className="font-medium">Summary Prompt:</span> {bot.post_call_settings?.summary_prompt?.substring(0, 100) || 'Not set'}...</p>
+                          <p><span className="font-medium">ID:</span> {bot.uid}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        <button
+                          onClick={() => startEditing(bot)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteBot(bot.uid)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
