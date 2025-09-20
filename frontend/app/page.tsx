@@ -17,6 +17,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingBot, setEditingBot] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     prompt: "",
@@ -26,12 +28,18 @@ export default function Home() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-  const fetchBots = async () => {
+  const fetchBots = async (page: number = 1) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/bot/list`);
+      const response = await fetch(`${API_URL}/api/bot/list?page=${page}`);
       const data = await response.json();
       setBots(data.bots || []);
+      
+      if (data.pagination) {
+        const totalPages = Math.ceil(data.pagination.total / 10);
+        setTotalPages(totalPages);
+        setCurrentPage(page);
+      }
     } catch (error) {
       console.error("Failed to fetch bots:", error);
     } finally {
@@ -50,7 +58,7 @@ export default function Home() {
       if (response.ok) {
         setFormData({ name: "", prompt: "", first_message: "", summary_prompt: "" });
         setShowCreateForm(false);
-        fetchBots();
+        fetchBots(currentPage);
       }
     } catch (error) {
       console.error("Failed to create bot:", error);
@@ -111,6 +119,12 @@ export default function Home() {
   const cancelEditing = () => {
     setEditingBot(null);
     setFormData({ name: "", prompt: "", first_message: "", summary_prompt: "" });
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchBots(page);
+    }
   };
 
   useEffect(() => {
@@ -188,84 +202,122 @@ export default function Home() {
           ) : bots.length === 0 ? (
             <div className="p-6 text-center text-black">No bots found</div>
           ) : (
-            <div className="divide-y">
-              {bots.map((bot) => (
-                <div key={bot.uid} className="p-6">
-                  {editingBot === bot.uid ? (
-                    <form onSubmit={(e) => updateBot(e, bot.uid)} className="space-y-4">
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full p-3 border rounded-lg text-black"
-                        required
-                      />
-                      <textarea
-                        value={formData.prompt}
-                        onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-                        className="w-full p-3 border rounded-lg h-24 text-black"
-                        required
-                      />
-                      <input
-                        type="text"
-                        value={formData.first_message}
-                        onChange={(e) => setFormData({ ...formData, first_message: e.target.value })}
-                        className="w-full p-3 border rounded-lg text-black"
-                        required
-                      />
-                      <textarea
-                        placeholder="Summary Prompt"
-                        value={formData.summary_prompt}
-                        onChange={(e) => setFormData({ ...formData, summary_prompt: e.target.value })}
-                        className="w-full p-3 border rounded-lg h-24 text-black placeholder-black"
-                        required
-                      />
-                      <div className="flex space-x-2">
-                        <button
-                          type="submit"
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelEditing}
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-black">{bot.name}</h3>
-                        <p className="text-black mt-1 mb-2">{bot.first_message}</p>
-                        <div className="text-sm text-black space-y-1">
-                          <p><span className="font-medium">Prompt:</span> {bot.prompt.substring(0, 100)}...</p>
-                          <p><span className="font-medium">Summary Prompt:</span> {bot.post_call_settings?.summary_prompt?.substring(0, 100) || 'Not set'}...</p>
-                          <p><span className="font-medium">ID:</span> {bot.uid}</p>
+            <>
+              <div className="divide-y">
+                {bots.map((bot) => (
+                  <div key={bot.uid} className="p-6">
+                    {editingBot === bot.uid ? (
+                      <form onSubmit={(e) => updateBot(e, bot.uid)} className="space-y-4">
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full p-3 border rounded-lg text-black"
+                          required
+                        />
+                        <textarea
+                          value={formData.prompt}
+                          onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                          className="w-full p-3 border rounded-lg h-24 text-black"
+                          required
+                        />
+                        <input
+                          type="text"
+                          value={formData.first_message}
+                          onChange={(e) => setFormData({ ...formData, first_message: e.target.value })}
+                          className="w-full p-3 border rounded-lg text-black"
+                          required
+                        />
+                        <textarea
+                          placeholder="Summary Prompt"
+                          value={formData.summary_prompt}
+                          onChange={(e) => setFormData({ ...formData, summary_prompt: e.target.value })}
+                          className="w-full p-3 border rounded-lg h-24 text-black placeholder-black"
+                          required
+                        />
+                        <div className="flex space-x-2">
+                          <button
+                            type="submit"
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-black">{bot.name}</h3>
+                          <p className="text-black mt-1 mb-2">{bot.first_message}</p>
+                          <div className="text-sm text-black space-y-1">
+                            <p><span className="font-medium">Prompt:</span> {bot.prompt.substring(0, 100)}...</p>
+                            <p><span className="font-medium">Summary Prompt:</span> {bot.post_call_settings?.summary_prompt?.substring(0, 100) || 'Not set'}...</p>
+                            <p><span className="font-medium">ID:</span> {bot.uid}</p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          <button
+                            onClick={() => startEditing(bot)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteBot(bot.uid)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
-                      <div className="flex space-x-2 ml-4">
-                        <button
-                          onClick={() => startEditing(bot)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => deleteBot(bot.uid)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="p-6 border-t flex justify-center items-center space-x-4">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-gray-200 text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex space-x-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-2 rounded-lg ${
+                          page === currentPage
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-black hover:bg-gray-300'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-gray-200 text-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
