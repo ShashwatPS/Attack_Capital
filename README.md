@@ -86,7 +86,7 @@ A comprehensive system for managing AI voice bots using OpenMic AI, with visitor
   - Maintains call history for future reference
 
 
-## 🗄️ Database Schema
+##  Database Schema
 
 ### Tables
 
@@ -130,7 +130,7 @@ The system includes predefined data:
 - **Departments**: Engineering, Marketing, Sales, HR, Finance
 - **Locations**: Multiple office towers across Indian cities
 
-## 🔌 External API Integration
+##  External API Integration
 
 ### OpenMic AI Integration
 
@@ -174,7 +174,7 @@ npm run seed
 
 4. **Start Server**
 ```bash
-npm run start
+npm run dev
 ```
 
 ### Frontend Setup
