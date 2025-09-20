@@ -16,15 +16,13 @@ datasource db {
 model Visitor {
   id        String   @id @default(cuid())
   name      String
-  phone     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  phone     String   @unique
 
   calls Call[]
 }
 
 model Employee {
-  id         String   @id @default(cuid())
+  id         Int   @id @default(autoincrement())
   name       String
   department String
   location   String
@@ -38,7 +36,5 @@ model Call {
   visitor           Visitor   @relation(fields: [visitorId], references: [id])
   summary           String
   arrivalTime       DateTime?
-  departmentVisited String?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
 }

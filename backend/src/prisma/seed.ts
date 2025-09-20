@@ -7,6 +7,12 @@ const prisma = getPrismaClient()
 
 async function main() {
   const employees = await Promise.all([
+    prisma.visitor.create({
+      data: {
+        name: "Shashwat Singh",
+        phone: "web_call"      // Hardconding this because of test data 
+      }
+    }),
     prisma.employee.create({
       data: {
         name: "Rohan Sharma",
