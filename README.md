@@ -153,7 +153,6 @@ The system integrates with OpenMic AI for voice bot management:
 1. **Install Dependencies**
 ```bash
 cd backend
-npm install
 npm run build
 ```
 
