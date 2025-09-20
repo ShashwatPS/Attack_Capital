@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Bot {
   uid: string;
@@ -27,6 +28,7 @@ export default function Home() {
   });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const router = useRouter();
 
   const fetchBots = async (page: number = 1) => {
     setLoading(true);
@@ -125,6 +127,10 @@ export default function Home() {
     if (page >= 1 && page <= totalPages) {
       fetchBots(page);
     }
+  };
+
+  const navigateToBot = (uid: string) => {
+    router.push(`/bot/${uid}/calls`);
   };
 
   useEffect(() => {
@@ -263,6 +269,12 @@ export default function Home() {
                           </div>
                         </div>
                         <div className="flex space-x-2 ml-4">
+                          <button
+                            onClick={() => navigateToBot(bot.uid)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+                          >
+                            View
+                          </button>
                           <button
                             onClick={() => startEditing(bot)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
