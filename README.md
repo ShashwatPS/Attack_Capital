@@ -190,6 +190,9 @@ npm install
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
+**Backend (deployed):** [https://attack-capital.onrender.com](https://attack-capital.onrender.com)
+**Frontend (deployed):** [https://attack-capital-black.vercel.app](https://attack-capital-black.vercel.app)
+
 
 1. **Start Development Server**
 ```bash
